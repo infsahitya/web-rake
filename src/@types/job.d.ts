@@ -1,13 +1,33 @@
 interface JobProps {
   url: string;
+  dataSlug: string;
   tags: string[];
+  dataID: string;
   salary: string;
-  company: string;
+  companyImage: string;
+  companyTitle: string;
   jobTitle: string;
   location: string;
-  benefits?: string[];
-  techStack?: string[];
-  description?: string;
-  requirements?: string[];
-  responsibilities?: string[];
+  benefits: string[];
+  techStack: string[];
+  description: string;
+  requirements: string[];
+  responsibilities: string[];
+  companyLink: string;
+  applyLink: string;
+  views: string;
+  applied: string;
 }
+
+type PrimaryJobProps = Pick<
+  JobProps,
+  | "tags"
+  | "dataSlug"
+  | "dataID"
+  | "jobTitle"
+  | "companyImage"
+  | "companyTitle"
+  | "url"
+>;
+
+type SecondaryJobProps = Partial<Omit<JobProps, keyof PrimaryJobProps>>;

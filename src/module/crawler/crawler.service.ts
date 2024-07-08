@@ -61,21 +61,22 @@ export default class CrawlerService {
   private async extractData(
     $: cheerio.CheerioAPI,
   ): Promise<Record<string, JobProps[]>> {
-    const jobs: JobProps[] = [];
+    const jobs = [];
     const jobElements = $("tr.job");
 
     for (const elementSource of jobElements.toArray()) {
       const job = this.extractJob($, elementSource);
       if (job) {
-        const jobDetails = await this.fetchJobDetails(job.url);
+        const jobDetails = await this.fetchJobDetails(job);
         jobs.push({ ...job, ...jobDetails });
+        // jobs.push(job);
       }
     }
 
     const jobsByCompany = jobs.reduce((acc, job) => {
-      if (!acc[job.company]) acc[job.company] = [];
+      if (!acc[job.companyTitle]) acc[job.companyTitle] = [];
 
-      acc[job.company].push(job);
+      acc[job.companyTitle].push(job);
       return acc;
     }, {});
 
@@ -85,74 +86,86 @@ export default class CrawlerService {
   private extractJob(
     $: cheerio.CheerioAPI,
     elementSource: cheerio.Element,
-  ): JobProps {
+  ): PrimaryJobProps {
     const el = $(elementSource);
 
-    const jobTitle = el.find('h2[itemprop="title"]').text().trim();
-    const company = el.find('h3[itemprop="name"]').text().trim();
-    const location = el.find(".location").first().text().trim();
-    const salary = el.find(".location").last().text().trim();
+    const url = el.attr("data-url");
+    const dataID = el.attr("data-id");
+    const dataSlug = el.attr("data-slug");
+    const companyImage = el
+      .find("td.image.has-logo > a > img.logo")
+      .attr("data-src");
+    const jobTitle = el
+      .find('td.company > a[itemprop="url"] > h2[itemprop="title"]')
+      .text()
+      .trim();
+    const companyTitle = el
+      .find('span[itemprop="hiringOrganization"] > h3[itemprop="name"]')
+      .text()
+      .trim();
     const tags = el
       .find(".tags .tag")
       .map((_, el) => $(el).text().trim())
       .get();
-    const url = el.find('a[itemprop="url"]').attr("href");
 
-    if (jobTitle && company && url) {
+    if (jobTitle && companyTitle && url) {
       return {
-        jobTitle,
-        company,
-        location,
-        salary,
         tags,
+        dataID,
+        dataSlug,
+        jobTitle,
+        companyImage,
+        companyTitle,
         url: `https://remoteok.com${url}`,
       };
     }
     return null;
   }
 
-  private async fetchJobDetails(url: string): Promise<Partial<JobProps>> {
+  private async fetchJobDetails(
+    job: PrimaryJobProps,
+  ): Promise<SecondaryJobProps> {
+    const { dataID, url } = job;
+
     try {
       const { data } = await this.axiosInstance.get(url);
       const $ = cheerio.load(data);
-
-      const description = $("#job-description").text().trim();
-      const responsibilities = $(
-        "#job-description strong:contains('Key Responsibilities')",
-      )
-        .next("ul")
-        .find("li")
-        .map((_, el) => $(el).text().trim())
-        .get();
-      const requirements = $("#job-description strong:contains('Requirements')")
-        .next("ul")
-        .find("li")
-        .map((_, el) => $(el).text().trim())
-        .get();
-      const techStack = $("#job-description strong:contains('Our Stack')")
-        .next("p")
-        .text()
-        .split(",")
-        .map((tech) => tech.trim());
-      const benefits = $("#job-description strong:contains('Benefits')")
-        .next("div")
-        .find("li")
-        .map((_, el) => $(el).text().trim())
-        .get();
-      const salaryMatch = data.match(
-        /baseSalary":{"@type":"MonetaryAmount","currency":"USD","value":{.*?"minValue":(\d+),"maxValue":(\d+)/,
+      const primaryParentEl = $(
+        `tr[class="expand expand-${dataID}"] div[itemprop="description"]`,
       );
-      const salary = salaryMatch
-        ? `$${salaryMatch[1]} - $${salaryMatch[2]}`
-        : "";
+
+      const secondaryParentEl = primaryParentEl.find("div.html");
+
+      const salary = secondaryParentEl
+        .find('h1:contains("Salary")')
+        .next()
+        .next()
+        .text()
+        .trim();
+
+      const companyLink = $("div.company_profile > p > a").attr("href");
+      const applyLink = $(
+        `a.button.action-apply[data-job-id="${dataID}"]`,
+      ).attr("href");
+      const viewsText = $('p:contains("👀")').text().trim();
+      const appliedText = $('p:contains("✅")').text().trim();
+
+      const viewsMatch = viewsText.match(/👀\s([\d,]+)\sviews/);
+      const appliedMatch = appliedText.match(/✅\s([\d,]+)\sapplied/);
+      const views = viewsMatch ? viewsMatch[1] : null;
+      const applied = appliedMatch ? appliedMatch[1] : null;
 
       return {
-        description,
-        responsibilities,
-        requirements,
-        techStack,
-        benefits,
+        description: "",
+        responsibilities: [],
+        requirements: [],
+        techStack: [],
+        benefits: [],
         salary,
+        companyLink,
+        applied,
+        views,
+        applyLink,
       };
     } catch (error) {
       console.error(`Error fetching job details from ${url}:`, error);
