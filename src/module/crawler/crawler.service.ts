@@ -58,14 +58,19 @@ export default class CrawlerService {
     throw new Error("Maximum number of redirects exceeded");
   }
 
-  private extractData($: cheerio.CheerioAPI): Record<string, JobProps[]> {
+  private async extractData(
+    $: cheerio.CheerioAPI,
+  ): Promise<Record<string, JobProps[]>> {
     const jobs: JobProps[] = [];
     const jobElements = $("tr.job");
 
-    jobElements.each((_, elementSource) => {
+    for (const elementSource of jobElements.toArray()) {
       const job = this.extractJob($, elementSource);
-      if (job) jobs.push(job);
-    });
+      if (job) {
+        const jobDetails = await this.fetchJobDetails(job.url);
+        jobs.push({ ...job, ...jobDetails });
+      }
+    }
 
     const jobsByCompany = jobs.reduce((acc, job) => {
       if (!acc[job.company]) acc[job.company] = [];
@@ -106,15 +111,49 @@ export default class CrawlerService {
     return null;
   }
 
-  private async fetchJobDetails(url: string): Promise<any> {
+  private async fetchJobDetails(url: string): Promise<Partial<JobProps>> {
     try {
       const { data } = await this.axiosInstance.get(url);
       const $ = cheerio.load(data);
 
-      const description = $("#job-description").html()?.trim() || "";
-      const requirements = $("#job-requirements").html()?.trim() || "";
+      const description = $("#job-description").text().trim();
+      const responsibilities = $(
+        "#job-description strong:contains('Key Responsibilities')",
+      )
+        .next("ul")
+        .find("li")
+        .map((_, el) => $(el).text().trim())
+        .get();
+      const requirements = $("#job-description strong:contains('Requirements')")
+        .next("ul")
+        .find("li")
+        .map((_, el) => $(el).text().trim())
+        .get();
+      const techStack = $("#job-description strong:contains('Our Stack')")
+        .next("p")
+        .text()
+        .split(",")
+        .map((tech) => tech.trim());
+      const benefits = $("#job-description strong:contains('Benefits')")
+        .next("div")
+        .find("li")
+        .map((_, el) => $(el).text().trim())
+        .get();
+      const salaryMatch = data.match(
+        /baseSalary":{"@type":"MonetaryAmount","currency":"USD","value":{.*?"minValue":(\d+),"maxValue":(\d+)/,
+      );
+      const salary = salaryMatch
+        ? `$${salaryMatch[1]} - $${salaryMatch[2]}`
+        : "";
 
-      return { description, requirements };
+      return {
+        description,
+        responsibilities,
+        requirements,
+        techStack,
+        benefits,
+        salary,
+      };
     } catch (error) {
       console.error(`Error fetching job details from ${url}:`, error);
       return {};
