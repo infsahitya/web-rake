@@ -147,13 +147,8 @@ export default class CrawlerService {
       const applyLink = $(
         `a.button.action-apply[data-job-id="${dataID}"]`,
       ).attr("href");
-      const viewsText = $('p:contains("👀")').text().trim();
-      const appliedText = $('p:contains("✅")').text().trim();
-
-      const viewsMatch = viewsText.match(/👀\s([\d,]+)\sviews/);
-      const appliedMatch = appliedText.match(/✅\s([\d,]+)\sapplied/);
-      const views = viewsMatch ? viewsMatch[1] : null;
-      const applied = appliedMatch ? appliedMatch[1] : null;
+      const views = $('p:contains("👀")').text().trim();
+      const applied = $('p:contains("✅")').text().trim();
 
       return {
         description: "",
@@ -165,7 +160,7 @@ export default class CrawlerService {
         companyLink,
         applied,
         views,
-        applyLink,
+        applyLink: `https://remoteok.com/${applyLink}`,
       };
     } catch (error) {
       console.error(`Error fetching job details from ${url}:`, error);
