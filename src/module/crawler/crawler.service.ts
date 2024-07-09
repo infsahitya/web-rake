@@ -1,15 +1,21 @@
+import OpenAI from "openai";
 import * as cheerio from "cheerio";
 import * as tough from "tough-cookie";
-import { Injectable } from "@nestjs/common";
+import { ConfigType } from "@nestjs/config";
+import envConfig from "src/config/env.config";
 import { wrapper } from "axios-cookiejar-support";
-import LoggerService from "../logger/logger.service";
+import { Inject, Injectable } from "@nestjs/common";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 @Injectable()
 export default class CrawlerService {
   private axiosInstance: AxiosInstance;
+  private openai: OpenAI;
 
-  constructor(private readonly logger: LoggerService) {
+  constructor(
+    @Inject(envConfig.KEY)
+    private readonly envConfigService: ConfigType<typeof envConfig>,
+  ) {
     this.axiosInstance = wrapper(
       axios.create({
         withCredentials: true,
@@ -20,6 +26,8 @@ export default class CrawlerService {
         },
       }),
     );
+
+    this.openai = new OpenAI({ apiKey: envConfigService.OPENAI_API_KEY });
   }
 
   async crawl(url: string): Promise<Record<string, JobProps[]>> {
@@ -143,12 +151,30 @@ export default class CrawlerService {
         .text()
         .trim();
 
-      const companyLink = $("div.company_profile > p > a").attr("href");
-      const applyLink = $(
-        `a.button.action-apply[data-job-id="${dataID}"]`,
-      ).attr("href");
-      const views = $('p:contains("👀")').text().trim();
-      const applied = $('p:contains("✅")').text().trim();
+      const companyLink = primaryParentEl
+        .find("div.company_profile > p > a")
+        .attr("href");
+      const applyLink = primaryParentEl
+        .find(`a.button.action-apply[data-job-id="${dataID}"]`)
+        .attr("href");
+      const views = primaryParentEl.find('p:contains("👀")').text().trim();
+      const applied = primaryParentEl.find('p:contains("✅")').text().trim();
+
+      try {
+        const data = await this.openai.chat.completions.create({
+          messages: [
+            {
+              role: "user",
+              content: `${secondaryParentEl.text()}\n\nExtract the following details from this markup: 1. Job Description\n2. Responsibilities\n3. Requirements\n4. Tech Stack\n5. Benefits\n6. Salary`,
+            },
+          ],
+          model: "gpt-3.5-turbo",
+        });
+
+        console.log(data.choices[0]);
+      } catch (error) {
+        console.log(error);
+      }
 
       return {
         description: "",
