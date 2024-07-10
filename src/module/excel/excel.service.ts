@@ -22,7 +22,7 @@ export default class ExcelService {
       "..",
       "doc",
       "sheets",
-      `${Date.now()}.xlsx`,
+      `${Date.now()}-jobs.xlsx`,
     );
 
     await workbook.xlsx.writeFile(filePath);
