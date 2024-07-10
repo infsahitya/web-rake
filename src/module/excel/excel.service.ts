@@ -1,6 +1,6 @@
+import path from "path";
 import * as ExcelJS from "exceljs";
 import { Injectable } from "@nestjs/common";
-import path from "path";
 
 @Injectable()
 export default class ExcelService {
