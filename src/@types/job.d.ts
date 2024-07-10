@@ -8,11 +8,11 @@ interface JobProps {
   companyTitle: string;
   jobTitle: string;
   location: string;
-  benefits: string[];
-  techStack: string[];
+  benefits: string;
+  techStack: string;
   description: string;
-  requirements: string[];
-  responsibilities: string[];
+  requirements: string;
+  responsibilities: string;
   companyLink: string;
   applyLink: string;
   views: string;

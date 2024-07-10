@@ -30,7 +30,7 @@ export default class CrawlerService {
     this.openai = new OpenAI({ apiKey: envConfigService.OPENAI_API_KEY });
   }
 
-  async crawl(url: string): Promise<Record<string, JobProps[]>> {
+  async crawl(url: string): ReturnType<typeof this.extractData> {
     try {
       const data = await this.fetchWithRedirects(url);
       const $ = cheerio.load(data);
@@ -66,9 +66,7 @@ export default class CrawlerService {
     throw new Error("Maximum number of redirects exceeded");
   }
 
-  private async extractData(
-    $: cheerio.CheerioAPI,
-  ): Promise<Record<string, JobProps[]>> {
+  private async extractData($: cheerio.CheerioAPI): Promise<JobProps[]> {
     const jobs = [];
     const jobElements = $("tr.job");
 
@@ -81,14 +79,14 @@ export default class CrawlerService {
       }
     }
 
-    const jobsByCompany = jobs.reduce((acc, job) => {
-      if (!acc[job.companyTitle]) acc[job.companyTitle] = [];
+    // const jobsByCompany = jobs.reduce((acc, job) => {
+    //   if (!acc[job.companyTitle]) acc[job.companyTitle] = [];
 
-      acc[job.companyTitle].push(job);
-      return acc;
-    }, {});
+    //   acc[job.companyTitle].push(job);
+    //   return acc;
+    // }, {});
 
-    return jobsByCompany;
+    return jobs;
   }
 
   private extractJob(
@@ -138,50 +136,62 @@ export default class CrawlerService {
     try {
       const { data } = await this.axiosInstance.get(url);
       const $ = cheerio.load(data);
-      const primaryParentEl = $(
-        `tr[class="expand expand-${dataID}"] div[itemprop="description"]`,
+      // const primaryParentEl = $(
+      //   `tr.expand.expand-${dataID} div.description`,
+      // );
+
+      const secondaryParentEl = $(
+        `tr.expand.expand-${dataID} div.description div.html`,
       );
 
-      const secondaryParentEl = primaryParentEl.find("div.html");
-
-      const salary = secondaryParentEl
-        .find('h1:contains("Salary")')
-        .next()
-        .next()
+      const companyLink = $(
+        `tr.expand.expand-${dataID} div.description div.company_profile > p > a`,
+      ).attr("href");
+      const applyLink = $(
+        `tr.expand.expand-${dataID} div.description a.button.action-apply[data-job-id="${dataID}"]`,
+      ).attr("href");
+      const views = $(
+        `tr.expand.expand-${dataID} div.description p:contains("👀")`,
+      )
+        .text()
+        .trim();
+      const applied = $(
+        `tr.expand.expand-${dataID} div.description p:contains("✅")`,
+      )
         .text()
         .trim();
 
-      const companyLink = primaryParentEl
-        .find("div.company_profile > p > a")
-        .attr("href");
-      const applyLink = primaryParentEl
-        .find(`a.button.action-apply[data-job-id="${dataID}"]`)
-        .attr("href");
-      const views = primaryParentEl.find('p:contains("👀")').text().trim();
-      const applied = primaryParentEl.find('p:contains("✅")').text().trim();
+      console.log(secondaryParentEl.html());
 
-      try {
-        const data = await this.openai.chat.completions.create({
-          messages: [
-            {
-              role: "user",
-              content: `${secondaryParentEl.text()}\n\nExtract the following details from this markup: 1. Job Description\n2. Responsibilities\n3. Requirements\n4. Tech Stack\n5. Benefits\n6. Salary`,
-            },
-          ],
-          model: "gpt-3.5-turbo",
-        });
+      const {
+        choices: [gptResponse],
+      } = await this.openai.chat.completions.create({
+        messages: [
+          {
+            role: "user",
+            content: `${data}\n\nGo through this HTML markup and output a new HTML markup without any extra text and info with this structure: 1. Job Description (make a <div> with class name as job-description and place a <p> tag inside this div and place all the content about job description inside this <p> tag)\n2. Responsibilities (make a <div> with class name as job-responsibilities and place a <p> tag inside this div and place all the content about job responsibilities inside this <p> tag)\n3. Requirements (make a <div> with class name as job-requirements and place a <p> tag inside this div and place all the content about job requirements inside this <p> tag)\n4. Tech Stack (make a <div> with class name as job-tech-stack and place a <p> tag inside this div and place all the content about job tech stack inside this <p> tag)\n5. Benefits (make a <div> with class name as job-benefits and place a <p> tag inside this div and place all the content about job benefits inside this <p> tag)\n6. Salary (make a <div> with class name as job-salary and place a <p> tag inside this div and place all the content about job salary inside this <p> tag)\n\nPS: If any of the following section is not available in the given markup, then do not produce the resultant markup regarding it.`,
+          },
+        ],
+        model: "gpt-3.5-turbo",
+      });
 
-        console.log(data.choices[0]);
-      } catch (error) {
-        console.log(error);
-      }
+      const $details = cheerio.load(gptResponse.message.content);
+
+      const description = $details("div.job-description > p").text().trim();
+      const responsibilities = $details("div.job-responsibilities > p")
+        .text()
+        .trim();
+      const requirements = $details("div.job-requirements > p").text().trim();
+      const techStack = $details("div.job-tech-stack > p").text().trim();
+      const benefits = $details("div.job-benefits > p").text().trim();
+      const salary = $details("div.job-salary > p").text().trim();
 
       return {
-        description: "",
-        responsibilities: [],
-        requirements: [],
-        techStack: [],
-        benefits: [],
+        description,
+        responsibilities,
+        requirements,
+        techStack,
+        benefits,
         salary,
         companyLink,
         applied,
