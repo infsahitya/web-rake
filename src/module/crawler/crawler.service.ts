@@ -3,16 +3,18 @@ import * as cheerio from "cheerio";
 import * as tough from "tough-cookie";
 import { ConfigType } from "@nestjs/config";
 import envConfig from "src/config/env.config";
+import ExcelService from "../excel/excel.service";
 import { wrapper } from "axios-cookiejar-support";
 import { Inject, Injectable } from "@nestjs/common";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 @Injectable()
 export default class CrawlerService {
-  private axiosInstance: AxiosInstance;
   private openai: OpenAI;
+  private axiosInstance: AxiosInstance;
 
   constructor(
+    private readonly excelService: ExcelService,
     @Inject(envConfig.KEY)
     private readonly envConfigService: ConfigType<typeof envConfig>,
   ) {
@@ -35,7 +37,10 @@ export default class CrawlerService {
       const data = await this.fetchWithRedirects(url);
       const $ = cheerio.load(data);
 
-      const result = this.extractData($);
+      const result = await this.extractData($);
+
+      await this.excelService.generateExcel(result);
+
       return result;
     } catch (error) {
       console.error(`Error fetching data from ${url}:`, error);
@@ -75,7 +80,6 @@ export default class CrawlerService {
       if (job) {
         const jobDetails = await this.fetchJobDetails(job);
         jobs.push({ ...job, ...jobDetails });
-        // jobs.push(job);
       }
     }
 
