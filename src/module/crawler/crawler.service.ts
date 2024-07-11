@@ -61,7 +61,8 @@ export default class CrawlerService {
   async crawl(): ReturnType<typeof this.extractData> {
     const result: JobProps[] = [];
 
-    this.crawlURLs.forEach(async (url) => {
+    for (const url of this.crawlURLs) {
+      console.log("Current URL -", url);
       try {
         const data = await this.fetchWithRedirects(url);
         const $ = cheerio.load(data);
@@ -71,9 +72,9 @@ export default class CrawlerService {
         console.error(`Error fetching data from ${url}:`, error);
         throw error;
       }
-    });
+    }
 
-    await this.excelService.generateExcel(result);
+    // await this.excelService.generateExcel(result);
 
     return result;
   }
@@ -142,7 +143,7 @@ export default class CrawlerService {
       const $ = cheerio.load(data);
 
       const secondaryParentEl = $(
-        `tr.expand.expand-${dataID} div.description div.html`,
+        `tr.expand.expand-${dataID} div.description div.html, tr.expand.expand-${dataID} div.description div.markdown`,
       );
       const secondaryParentElHtml = secondaryParentEl.html();
 
@@ -150,7 +151,7 @@ export default class CrawlerService {
         `tr.expand.expand-${dataID} div.description div.company_profile > p > a`,
       ).attr("href");
       const applyLink = $(
-        `tr.expand.expand-${dataID} div.description a.button.action-apply[data-job-id="${dataID}"]`,
+        `a.button.action-apply[data-job-id="${dataID}"]`,
       ).attr("href");
       const views = $(
         `tr.expand.expand-${dataID} div.description p:contains("👀")`,
