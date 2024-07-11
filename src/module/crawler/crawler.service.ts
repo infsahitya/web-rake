@@ -142,27 +142,19 @@ export default class CrawlerService {
       const { data } = await this.axiosInstance.get(url);
       const $ = cheerio.load(data);
 
-      const secondaryParentEl = $(
-        `tr.expand.expand-${dataID} div.description div.html, tr.expand.expand-${dataID} div.description div.markdown`,
-      );
+      const parentEl = $(`tr.expand.expand-${dataID} div.description`);
+
+      const secondaryParentEl = $(parentEl).find("div.html, div.markdown");
       const secondaryParentElHtml = secondaryParentEl.html();
 
-      const companyLink = $(
-        `tr.expand.expand-${dataID} div.description div.company_profile > p > a`,
-      ).attr("href");
+      const companyLink = $(parentEl)
+        .find(`div.company_profile > p > a`)
+        .attr("href");
       const applyLink = $(
         `a.button.action-apply[data-job-id="${dataID}"]`,
       ).attr("href");
-      const views = $(
-        `tr.expand.expand-${dataID} div.description p:contains("👀")`,
-      )
-        .text()
-        .trim();
-      const applied = $(
-        `tr.expand.expand-${dataID} div.description p:contains("✅")`,
-      )
-        .text()
-        .trim();
+      const views = $(parentEl).find(`p:contains("👀")`).text().trim();
+      const applied = $(parentEl).find(`p:contains("✅")`).text().trim();
 
       const {
         choices: [gptResponse],
@@ -197,7 +189,7 @@ export default class CrawlerService {
         companyLink,
         applied,
         views,
-        applyLink: `https://remoteok.com/${applyLink}`,
+        applyLink: `https://remoteok.com${applyLink}`,
       };
     } catch (error) {
       console.error(`Error fetching job details from ${url}:`, error);
