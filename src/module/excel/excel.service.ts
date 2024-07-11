@@ -4,7 +4,7 @@ import { Injectable } from "@nestjs/common";
 
 @Injectable()
 export default class ExcelService {
-  async generateExcel(data: PrimaryJobProps[]): Promise<void> {
+  async generateExcel(data: JobProps[]): Promise<void> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
 
