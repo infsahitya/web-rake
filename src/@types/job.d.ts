@@ -9,9 +9,13 @@ interface JobProps {
   jobTitle: string;
   location: string;
   benefits: string;
+  // benefits: string[];
   techStack: string;
+  // techStack: string[];
   description: string;
+  // requirements: string[];
   requirements: string;
+  // responsibilities: string[];
   responsibilities: string;
   companyLink: string;
   applyLink: string;

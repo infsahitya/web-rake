@@ -1,4 +1,5 @@
 export enum EnvKeys {
   NODE_ENV = "NODE_ENV",
+  CRAWL_URLS = "CRAWL_URLS",
   OPENAI_API_KEY = "OPENAI_API_KEY",
 }

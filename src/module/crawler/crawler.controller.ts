@@ -1,5 +1,5 @@
-import { Controller, Get, Query } from "@nestjs/common";
 import CrawlerService from "./crawler.service";
+import { Controller, Get } from "@nestjs/common";
 
 @Controller({
   version: "1",
@@ -9,10 +9,7 @@ export default class CrawlerController {
   constructor(private readonly crawlerService: CrawlerService) {}
 
   @Get()
-  async crawl(@Query("url") url: string): Promise<any> {
-    if (!url) {
-      return { error: "URL query parameter is required" };
-    }
-    return await this.crawlerService.crawl(url);
+  async crawl() {
+    return await this.crawlerService.crawl();
   }
 }

@@ -11,6 +11,7 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 @Injectable()
 export default class CrawlerService {
   private openai: OpenAI;
+  private crawlURLs: string[];
   private axiosInstance: AxiosInstance;
 
   constructor(
@@ -30,22 +31,8 @@ export default class CrawlerService {
     );
 
     this.openai = new OpenAI({ apiKey: envConfigService.OPENAI_API_KEY });
-  }
 
-  async crawl(url: string): ReturnType<typeof this.extractData> {
-    try {
-      const data = await this.fetchWithRedirects(url);
-      const $ = cheerio.load(data);
-
-      const result = await this.extractData($);
-
-      await this.excelService.generateExcel(result);
-
-      return result;
-    } catch (error) {
-      console.error(`Error fetching data from ${url}:`, error);
-      throw error;
-    }
+    this.crawlURLs = envConfigService.CRAWL_URLS.split(",");
   }
 
   private async fetchWithRedirects(
@@ -71,6 +58,26 @@ export default class CrawlerService {
     throw new Error("Maximum number of redirects exceeded");
   }
 
+  async crawl(): ReturnType<typeof this.extractData> {
+    const result: JobProps[] = [];
+
+    this.crawlURLs.forEach(async (url) => {
+      try {
+        const data = await this.fetchWithRedirects(url);
+        const $ = cheerio.load(data);
+
+        result.push(...(await this.extractData($)));
+      } catch (error) {
+        console.error(`Error fetching data from ${url}:`, error);
+        throw error;
+      }
+    });
+
+    await this.excelService.generateExcel(result);
+
+    return result;
+  }
+
   private async extractData($: cheerio.CheerioAPI): Promise<JobProps[]> {
     const jobs = [];
     const jobElements = $("tr.job");
@@ -82,13 +89,6 @@ export default class CrawlerService {
         jobs.push({ ...job, ...jobDetails });
       }
     }
-
-    // const jobsByCompany = jobs.reduce((acc, job) => {
-    //   if (!acc[job.companyTitle]) acc[job.companyTitle] = [];
-
-    //   acc[job.companyTitle].push(job);
-    //   return acc;
-    // }, {});
 
     return jobs;
   }
@@ -140,13 +140,11 @@ export default class CrawlerService {
     try {
       const { data } = await this.axiosInstance.get(url);
       const $ = cheerio.load(data);
-      // const primaryParentEl = $(
-      //   `tr.expand.expand-${dataID} div.description`,
-      // );
 
       const secondaryParentEl = $(
         `tr.expand.expand-${dataID} div.description div.html`,
       );
+      const secondaryParentElHtml = secondaryParentEl.html();
 
       const companyLink = $(
         `tr.expand.expand-${dataID} div.description div.company_profile > p > a`,
@@ -165,18 +163,16 @@ export default class CrawlerService {
         .text()
         .trim();
 
-      console.log(secondaryParentEl.html());
-
       const {
         choices: [gptResponse],
       } = await this.openai.chat.completions.create({
         messages: [
           {
             role: "user",
-            content: `${data}\n\nGo through this HTML markup and output a new HTML markup without any extra text and info with this structure: 1. Job Description (make a <div> with class name as job-description and place a <p> tag inside this div and place all the content about job description inside this <p> tag)\n2. Responsibilities (make a <div> with class name as job-responsibilities and place a <p> tag inside this div and place all the content about job responsibilities inside this <p> tag)\n3. Requirements (make a <div> with class name as job-requirements and place a <p> tag inside this div and place all the content about job requirements inside this <p> tag)\n4. Tech Stack (make a <div> with class name as job-tech-stack and place a <p> tag inside this div and place all the content about job tech stack inside this <p> tag)\n5. Benefits (make a <div> with class name as job-benefits and place a <p> tag inside this div and place all the content about job benefits inside this <p> tag)\n6. Salary (make a <div> with class name as job-salary and place a <p> tag inside this div and place all the content about job salary inside this <p> tag)\n\nPS: If any of the following section is not available in the given markup, then do not produce the resultant markup regarding it.`,
+            content: `${secondaryParentElHtml}\n\nGo through this HTML markup and output a new HTML markup without any extra text and info with this structure: 1. Job Description (make a <div> with class name as job-description and place a <p> tag inside this div and place all the content about job description inside this <p> tag)\n2. Responsibilities (make a <div> with class name as job-responsibilities and place a <p> tag inside this div and place all the content about job responsibilities inside this <p> tag)\n3. Requirements (make a <div> with class name as job-requirements and place a <p> tag inside this div and place all the content about job requirements inside this <p> tag)\n4. Tech Stack (make a <div> with class name as job-tech-stack and place a <p> tag inside this div and place all the content about job tech stack inside this <p> tag)\n5. Benefits (make a <div> with class name as job-benefits and place a <p> tag inside this div and place all the content about job benefits inside this <p> tag)\n6. Salary (make a <div> with class name as job-salary and place a <p> tag inside this div and place all the content about job salary inside this <p> tag)\n\nPS: If any of the mentioned section is not available in the given markup, then do not produce the its resultant markup, skip it. And do no mention any kind of heading of the section inside <p> tag, just write its content.`,
           },
         ],
-        model: "gpt-3.5-turbo",
+        model: "gpt-4-turbo",
       });
 
       const $details = cheerio.load(gptResponse.message.content);
