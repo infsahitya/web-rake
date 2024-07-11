@@ -1,11 +1,8 @@
 // import OpenAI from "openai";
 import * as cheerio from "cheerio";
 import * as tough from "tough-cookie";
-import { ConfigType } from "@nestjs/config";
-import envConfig from "src/config/env.config";
-import ExcelService from "../excel/excel.service";
+import { Injectable } from "@nestjs/common";
 import { wrapper } from "axios-cookiejar-support";
-import { Inject, Injectable } from "@nestjs/common";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 type PrimaryJobProps = Omit<JobProps, "applyLink" | "views" | "applied">;
@@ -13,29 +10,19 @@ type SecondaryJobProps = Omit<JobProps, keyof PrimaryJobProps>;
 
 @Injectable()
 export default class CrawlerService {
-  // private openai: OpenAI;
   private axiosInstance: AxiosInstance;
-  private userAgents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.3 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.864.48 Safari/537.36 Edg/91.0.864.48",
-    "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Mobile Safari/537.36",
-  ] as const;
 
-  constructor(
-    private readonly excelService: ExcelService,
-    @Inject(envConfig.KEY)
-    private readonly envConfigService: ConfigType<typeof envConfig>,
-  ) {
+  constructor() {
     this.axiosInstance = wrapper(
       axios.create({
         withCredentials: true,
         jar: new tough.CookieJar(),
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
       }),
     );
-
-    // this.openai = new OpenAI({ apiKey: envConfigService.OPENAI_API_KEY });
   }
 
   private async fetchWithRedirects(
@@ -48,10 +35,6 @@ export default class CrawlerService {
     while (redirects < maxRedirects) {
       response = await this.axiosInstance.get(url, {
         validateStatus: (status) => status < 400 || status === 302,
-        headers: {
-          "User-Agent":
-            this.userAgents[Math.floor(Math.random() * this.userAgents.length)],
-        },
       });
 
       if (response.status === 302) {
@@ -70,7 +53,7 @@ export default class CrawlerService {
 
     let offsetValue: number = 15;
     const offsetJump: number = 15;
-    const maxOffset: number = 1000;
+    const maxOffset: number = 500;
 
     try {
       while (offsetValue <= maxOffset) {
@@ -94,8 +77,6 @@ export default class CrawlerService {
       console.error(`Error fetching data:`, error);
       throw error;
     }
-
-    // await this.excelService.generateExcel(result);
 
     return result;
   }
@@ -166,8 +147,9 @@ export default class CrawlerService {
       const applyLink = $(
         `a.button.action-apply[data-job-id="${dataID}"]`,
       ).attr("href");
-      const views = $(parentEl).find(`p:contains("👀")`).text().trim();
-      const applied = $(parentEl).find(`p:contains("✅")`).text().trim();
+      const views = $(parentEl).find(`p:contains("👀")`).text().trim() || null;
+      const applied =
+        $(parentEl).find(`p:contains("✅")`).text().trim() || null;
 
       return {
         views,
