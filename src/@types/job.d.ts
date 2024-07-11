@@ -1,37 +1,53 @@
 interface JobProps {
-  url: string;
-  dataSlug: string;
-  tags: string[];
-  dataID: string;
-  salary: string;
-  companyImage: string;
-  companyTitle: string;
+  datePosted: string;
+  salary: {
+    "@type": string;
+    currency: string;
+    value: {
+      "@type": string;
+      minValue: number;
+      maxValue: number;
+      unitText: string;
+    };
+  };
+  employmentType: string;
+  industry: string;
+  jobLocationType: string;
+  applicantLocationRequirements: {
+    "@type": string;
+    name: string;
+  };
+  jobLocation: {
+    address: {
+      "@type": string;
+      addressCountry: string;
+      addressRegion: string;
+      streetAddress: string;
+      postalCode: string;
+      addressLocality: string;
+    };
+  };
   jobTitle: string;
-  location: string;
-  benefits: string;
-  // benefits: string[];
-  techStack: string;
-  // techStack: string[];
+  occupationalCategory: string;
+  workHours: string;
+  validThrough: string;
+  hiringOrganization: {
+    "@type": string;
+    name: string;
+    url: string;
+    sameAs: string;
+    logo: {
+      "@type": string;
+      url: string;
+    };
+  };
   description: string;
-  // requirements: string[];
-  requirements: string;
-  // responsibilities: string[];
-  responsibilities: string;
-  companyLink: string;
+  jobBenefits: string;
+  dataID: string;
+  dataSlug: string;
+  dataURL: string;
+  dataSearch: string;
   applyLink: string;
   views: string;
   applied: string;
 }
-
-type PrimaryJobProps = Pick<
-  JobProps,
-  | "tags"
-  | "dataSlug"
-  | "dataID"
-  | "jobTitle"
-  | "companyImage"
-  | "companyTitle"
-  | "url"
->;
-
-type SecondaryJobProps = Partial<Omit<JobProps, keyof PrimaryJobProps>>;
