@@ -1,12 +1,8 @@
-// import OpenAI from "openai";
 import * as cheerio from "cheerio";
 import * as tough from "tough-cookie";
 import { Injectable } from "@nestjs/common";
 import { wrapper } from "axios-cookiejar-support";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
-
-type PrimaryJobProps = Omit<JobProps, "applyLink" | "views" | "applied">;
-type SecondaryJobProps = Omit<JobProps, keyof PrimaryJobProps>;
 
 @Injectable()
 export default class CrawlerService {
@@ -53,7 +49,7 @@ export default class CrawlerService {
 
     let offsetValue: number = 15;
     const offsetJump: number = 15;
-    const maxOffset: number = 500;
+    const maxOffset: number = 15;
 
     try {
       while (offsetValue <= maxOffset) {
@@ -88,8 +84,7 @@ export default class CrawlerService {
     for (const elementSource of jobElements.toArray()) {
       const job = this.extractJob($, elementSource);
       if (job) {
-        const jobDetails = await this.fetchOtherDetails(job);
-        jobs.push({ ...job, ...jobDetails });
+        jobs.push(job);
       }
     }
 
@@ -99,7 +94,7 @@ export default class CrawlerService {
   private extractJob(
     $: cheerio.CheerioAPI,
     elementSource: cheerio.Element,
-  ): PrimaryJobProps | null {
+  ): JobProps {
     const el = $(elementSource);
 
     const scriptTag = el.find('script[type="application/ld+json"]').html();
@@ -110,15 +105,18 @@ export default class CrawlerService {
 
     const jobData = JSON.parse(scriptTag);
 
-    return {
+    const job = {
       datePosted: jobData.datePosted,
       validThrough: jobData.validThrough || null,
       dataID: el.attr("data-id") || null,
       jobTitle: jobData.title || null,
       jobLocation: jobData.jobLocation || null,
       dataSlug: el.attr("data-slug") || null,
-      dataURL: `https://remoteok.com${el.attr("data-url")}` || null,
-      dataSearch: el.attr("data-search") || null,
+      dataURL: el.attr("data-url") || null,
+      dataSearch:
+        el.attr("data-search").split(" [")[0] ||
+        el.attr("data-search").split(" {")[0] ||
+        null,
       salary: jobData.baseSalary || null,
       employmentType: jobData.employmentType || null,
       industry: jobData.industry || null,
@@ -130,39 +128,16 @@ export default class CrawlerService {
       hiringOrganization: jobData.hiringOrganization || null,
       description: jobData.description || null,
       jobBenefits: jobData.jobBenefits || null,
+      applyLink: $(
+        `a.button.action-apply[data-job-id="${el.attr("data-id")}"]`,
+      ).attr("href"),
+      tags:
+        el
+          .find(".tags .tag")
+          .map((_, tag) => $(tag).text().trim())
+          .toArray() || [],
     };
-  }
 
-  private async fetchOtherDetails(
-    job: PrimaryJobProps,
-  ): Promise<SecondaryJobProps> {
-    const { dataURL, dataID } = job;
-
-    try {
-      const { data } = await this.axiosInstance.get(dataURL);
-      const $ = cheerio.load(data);
-
-      const parentEl = $(`tr.expand.expand-${dataID}.active div.description`);
-
-      const applyLink = $(
-        `a.button.action-apply[data-job-id="${dataID}"]`,
-      ).attr("href");
-      const views = $(parentEl).find(`p:contains("👀")`).text().trim() || null;
-      const applied =
-        $(parentEl).find(`p:contains("✅")`).text().trim() || null;
-
-      return {
-        views,
-        applied,
-        applyLink: `https://remoteok.com${applyLink}`,
-      };
-    } catch (error) {
-      console.error(`Error fetching job details from ${dataURL}:`, error);
-      return {
-        views: null,
-        applied: null,
-        applyLink: null,
-      };
-    }
+    return job;
   }
 }

@@ -48,6 +48,5 @@ interface JobProps {
   dataURL: string;
   dataSearch: string;
   applyLink: string;
-  views: string;
-  applied: string;
+  tags: string[];
 }
