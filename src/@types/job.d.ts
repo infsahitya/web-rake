@@ -1,6 +1,6 @@
 interface JobProps {
   datePosted: string;
-  salary: {
+  baseSalary: {
     "@type": string;
     currency: string;
     value: {
@@ -27,7 +27,7 @@ interface JobProps {
       addressLocality: string;
     };
   };
-  jobTitle: string;
+  title: string;
   occupationalCategory: string;
   workHours: string;
   validThrough: string;
@@ -43,10 +43,12 @@ interface JobProps {
   };
   description: string;
   jobBenefits: string;
-  dataID: string;
-  dataSlug: string;
-  dataURL: string;
-  dataSearch: string;
+  data_id: string;
+  data_slug: string;
+  data_url: string;
+  data_search: string;
   applyLink: string;
   tags: string[];
+  skills: string[];
+  directApply: string;
 }

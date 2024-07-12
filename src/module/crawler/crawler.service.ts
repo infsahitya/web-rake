@@ -49,10 +49,10 @@ export default class CrawlerService {
 
     let offsetValue: number = 15;
     const offsetJump: number = 15;
-    const maxOffset: number = 15;
+    const maxOffset: number = 1000;
 
-    try {
-      while (offsetValue <= maxOffset) {
+    while (offsetValue <= maxOffset) {
+      try {
         console.log(`Current Offset - ${offsetValue}`);
 
         const data = await this.fetchWithRedirects(
@@ -68,11 +68,16 @@ export default class CrawlerService {
         offsetValue += offsetJump;
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error(`Error fetching data:`, error);
+        offsetValue += offsetJump;
+        continue;
       }
-    } catch (error) {
-      console.error(`Error fetching data:`, error);
-      throw error;
     }
+
+    console.log(
+      `Extracted ${result.length} jobs with current offset value of ${offsetValue}`,
+    );
 
     return result;
   }
@@ -105,19 +110,26 @@ export default class CrawlerService {
 
     const jobData = JSON.parse(scriptTag);
 
-    const job = {
+    const skillsAndTags =
+      el
+        .find(".tags .tag")
+        .map((_, tag) => $(tag).text().trim())
+        .toArray() || [];
+
+    const job: JobProps = {
       datePosted: jobData.datePosted,
       validThrough: jobData.validThrough || null,
-      dataID: el.attr("data-id") || null,
-      jobTitle: jobData.title || null,
-      jobLocation: jobData.jobLocation || null,
-      dataSlug: el.attr("data-slug") || null,
-      dataURL: el.attr("data-url") || null,
-      dataSearch:
+      data_id: el.attr("data-id") || null,
+      title: jobData.title || null,
+      data_slug: el.attr("data-slug") || null,
+      data_url: el.attr("data-url") || null,
+      data_search:
         el.attr("data-search").split(" [")[0] ||
         el.attr("data-search").split(" {")[0] ||
         null,
-      salary: jobData.baseSalary || null,
+      jobLocation: jobData.jobLocation || null,
+      directApply: jobData.directApply || null,
+      baseSalary: jobData.baseSalary || null,
       employmentType: jobData.employmentType || null,
       industry: jobData.industry || null,
       jobLocationType: jobData.jobLocationType || null,
@@ -131,11 +143,8 @@ export default class CrawlerService {
       applyLink: $(
         `a.button.action-apply[data-job-id="${el.attr("data-id")}"]`,
       ).attr("href"),
-      tags:
-        el
-          .find(".tags .tag")
-          .map((_, tag) => $(tag).text().trim())
-          .toArray() || [],
+      tags: skillsAndTags,
+      skills: skillsAndTags,
     };
 
     return job;
