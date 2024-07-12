@@ -49,7 +49,7 @@ export default class CrawlerService {
 
     let offsetValue: number = 15;
     const offsetJump: number = 15;
-    const maxOffset: number = 1000;
+    const maxOffset: number = 30;
 
     while (offsetValue <= maxOffset) {
       try {

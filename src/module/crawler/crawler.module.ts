@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
+import CsvModule from "../csv/csv.module";
 import CrawlerService from "./crawler.service";
 import CrawlerController from "./crawler.controller";
-import ExcelModule from "../excel/excel.module";
 
 @Module({
-  imports: [ExcelModule],
+  imports: [CsvModule],
   providers: [CrawlerService],
   controllers: [CrawlerController],
 })

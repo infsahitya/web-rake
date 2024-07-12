@@ -4,7 +4,7 @@ import LoggerModule from "./module/logger/logger.module";
 import { ConfigModule, ConfigType } from "@nestjs/config";
 import LoggerService from "./module/logger/logger.service";
 import CrawlerModule from "./module/crawler/crawler.module";
-import ExcelModule from "./module/excel/excel.module";
+import ExcelModule from "./module/csv/csv.module";
 
 @Module({
   imports: [
