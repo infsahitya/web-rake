@@ -47,12 +47,11 @@ export default class CrawlerService {
   async crawl(): Promise<JobProps[]> {
     const result: JobProps[] = [];
 
-    let offsetValue: number = 0;
+    let offsetValue: number = 15;
     const offsetJump: number = 15;
     const maxOffset: number = 30;
 
-    while (true) {
-      offsetValue += offsetJump;
+    while (offsetValue <= maxOffset) {
       try {
         console.log(`Current Offset - ${offsetValue}`);
 
@@ -66,19 +65,12 @@ export default class CrawlerService {
         if (extractedData.length === 0) break;
 
         result.push(...extractedData);
-
         offsetValue += offsetJump;
-
-        if (offsetValue > maxOffset) {
-          console.log(`Max offset value reached - ${offsetValue}/${maxOffset}`);
-          break;
-        }
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
-        console.log(
-          `Data fetching error occurred at offset value of ${offsetValue}/${maxOffset}`,
-        );
+        console.error(`Error fetching data:`, error);
+        offsetValue += offsetJump;
         continue;
       }
     }
@@ -128,31 +120,31 @@ export default class CrawlerService {
       jobData.applicantLocationRequirements,
     )
       ? jobData.applicantLocationRequirements
-          .map((location: any) => location.name)
+          .map((location: any) => location?.name)
           .join(", ")
-      : jobData.applicantLocationRequirements.name;
+      : jobData.applicantLocationRequirements?.name;
 
     const job: JobProps = {
       datePosted: jobData.datePosted,
       description: jobData.description || null,
-      baseSalary_minValue: jobData.baseSalary.value.minValue || null,
-      baseSalary_maxValue: jobData.baseSalary.value.maxValue || null,
+      baseSalary_minValue: jobData.baseSalary.value?.minValue || null,
+      baseSalary_maxValue: jobData.baseSalary.value?.maxValue || null,
       employmentType: jobData.employmentType || null,
       industry: jobData.industry || null,
       jobLocationType: jobData.jobLocationType || null,
       applicantLocationRequirements: applicantLocationRequirements,
       title: jobData.title || null,
-      image: jobData.hiringOrganization.logo.url || null,
+      image: jobData.hiringOrganization.logo?.url || null,
       occupationalCategory: jobData.occupationalCategory || null,
       workHours: jobData.workHours || null,
       validThrough: jobData.validThrough || null,
-      hiringOrganization_name: jobData.hiringOrganization.name || null,
-      hiringOrganization_url: jobData.hiringOrganization.url || null,
-      hiringOrganization_logo: jobData.hiringOrganization.logo.url || null,
+      hiringOrganization_name: jobData.hiringOrganization?.name || null,
+      hiringOrganization_url: jobData.hiringOrganization?.url || null,
+      hiringOrganization_logo: jobData.hiringOrganization?.logo?.url || null,
       directApply: jobData.directApply || null,
       data_slug: el.attr("data-slug") || null,
       data_url: el.attr("data-url") || null,
-      data_company: jobData.hiringOrganization.name || null,
+      data_company: jobData.hiringOrganization?.name || null,
       data_id: el.attr("data-id") || null,
       data_search:
         el.attr("data-search").split(" [")[0] ||
