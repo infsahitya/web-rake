@@ -1,7 +1,6 @@
-import { Response } from "express";
 import CsvService from "../csv/csv.service";
 import CrawlerService from "./crawler.service";
-import { Controller, Get, Res } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 
 @Controller({
   version: "1",
@@ -14,15 +13,11 @@ export default class CrawlerController {
   ) {}
 
   @Get()
-  async crawl(@Res() res: Response) {
+  async crawl() {
     const data = await this.crawlerService.crawl();
 
-    const filePath = this.csvService.convertToCsv(data);
+    const [jsonFilePath, csvFilePath] = this.csvService.convertToCsv(data);
 
-    return res.download(filePath, (err) => {
-      if (err) {
-        res.status(500).send({ message: "Could not download the file." });
-      }
-    });
+    return { jsonFilePath, csvFilePath };
   }
 }

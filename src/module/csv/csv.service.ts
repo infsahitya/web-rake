@@ -8,8 +8,7 @@ export default class CsvService {
   private dirPath: string;
 
   constructor() {
-    const tempDirPath = path.join(__dirname, "../../..", "docs");
-
+    const tempDirPath = path.join(__dirname, "../../..", "data");
     this.dirPath = tempDirPath;
 
     if (!fs.existsSync(tempDirPath)) {
@@ -17,13 +16,21 @@ export default class CsvService {
     }
   }
 
-  convertToCsv(data: JobProps[]): string {
+  convertToCsv(data: JobProps[]): [string, string] {
     const json2csvParser = new Parser();
     const csv = json2csvParser.parse(data);
 
-    const filePath = path.join(this.dirPath, `${Date.now()}-jobs.csv`);
+    const filePrefix = Date.now().toString();
+    const folderPath = path.join(this.dirPath, filePrefix);
 
-    fs.writeFileSync(filePath, csv);
-    return filePath;
+    fs.mkdirSync(folderPath, { recursive: true });
+
+    const csvFilePath = path.join(folderPath, `jobs.csv`);
+    const jsonFilePath = path.join(folderPath, `jobs.json`);
+
+    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(csvFilePath, csv);
+
+    return [jsonFilePath, csvFilePath];
   }
 }
