@@ -25,8 +25,8 @@ export default class CsvService {
 
     fs.mkdirSync(folderPath, { recursive: true });
 
-    const csvFilePath = path.join(folderPath, `jobs.csv`);
-    const jsonFilePath = path.join(folderPath, `jobs.json`);
+    const csvFilePath = path.join(folderPath, `${filePrefix}_jobs.csv`);
+    const jsonFilePath = path.join(folderPath, `${filePrefix}_jobs.json`);
 
     fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2));
     fs.writeFileSync(csvFilePath, csv);
