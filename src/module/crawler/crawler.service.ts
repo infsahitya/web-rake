@@ -49,7 +49,7 @@ export default class CrawlerService {
 
     let offsetValue: number = 0;
     const offsetJump: number = 15;
-    const maxOffset: number = 2000;
+    const maxOffset: number = 30;
 
     while (true) {
       offsetValue += offsetJump;
@@ -66,13 +66,19 @@ export default class CrawlerService {
         if (extractedData.length === 0) break;
 
         result.push(...extractedData);
-        
-        if (offsetValue > maxOffset) break;
-        else offsetValue += offsetJump;
+
+        offsetValue += offsetJump;
+
+        if (offsetValue > maxOffset) {
+          console.log(`Max offset value reached - ${offsetValue}/${maxOffset}`);
+          break;
+        }
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
-        console.error(`Error fetching data:`, error);
+        console.log(
+          `Data fetching error occurred at offset value of ${offsetValue}/${maxOffset}`,
+        );
         continue;
       }
     }
@@ -118,35 +124,46 @@ export default class CrawlerService {
         .map((_, tag) => $(tag).text().trim())
         .toArray() || [];
 
+    const applicantLocationRequirements = Array.isArray(
+      jobData.applicantLocationRequirements,
+    )
+      ? jobData.applicantLocationRequirements
+          .map((location: any) => location.name)
+          .join(", ")
+      : jobData.applicantLocationRequirements.name;
+
     const job: JobProps = {
       datePosted: jobData.datePosted,
-      validThrough: jobData.validThrough || null,
-      data_id: el.attr("data-id") || null,
+      description: jobData.description || null,
+      baseSalary_minValue: jobData.baseSalary.value.minValue || null,
+      baseSalary_maxValue: jobData.baseSalary.value.maxValue || null,
+      employmentType: jobData.employmentType || null,
+      industry: jobData.industry || null,
+      jobLocationType: jobData.jobLocationType || null,
+      applicantLocationRequirements: applicantLocationRequirements,
       title: jobData.title || null,
+      image: jobData.hiringOrganization.logo.url || null,
+      occupationalCategory: jobData.occupationalCategory || null,
+      workHours: jobData.workHours || null,
+      validThrough: jobData.validThrough || null,
+      hiringOrganization_name: jobData.hiringOrganization.name || null,
+      hiringOrganization_url: jobData.hiringOrganization.url || null,
+      hiringOrganization_logo: jobData.hiringOrganization.logo.url || null,
+      directApply: jobData.directApply || null,
       data_slug: el.attr("data-slug") || null,
       data_url: el.attr("data-url") || null,
+      data_company: jobData.hiringOrganization.name || null,
+      data_id: el.attr("data-id") || null,
       data_search:
         el.attr("data-search").split(" [")[0] ||
         el.attr("data-search").split(" {")[0] ||
         null,
-      jobLocation: jobData.jobLocation || null,
-      directApply: jobData.directApply || null,
-      baseSalary: jobData.baseSalary || null,
-      employmentType: jobData.employmentType || null,
-      industry: jobData.industry || null,
-      jobLocationType: jobData.jobLocationType || null,
-      applicantLocationRequirements:
-        jobData.applicantLocationRequirements || null,
-      occupationalCategory: jobData.occupationalCategory || null,
-      workHours: jobData.workHours || null,
-      hiringOrganization: jobData.hiringOrganization || null,
-      description: jobData.description || null,
+      tags: skillsAndTags,
+      skills: skillsAndTags,
       jobBenefits: jobData.jobBenefits || null,
       applyLink: $(
         `a.button.action-apply[data-job-id="${el.attr("data-id")}"]`,
       ).attr("href"),
-      tags: skillsAndTags,
-      skills: skillsAndTags,
     };
 
     return job;
