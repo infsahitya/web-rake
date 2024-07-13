@@ -47,11 +47,12 @@ export default class CrawlerService {
   async crawl(): Promise<JobProps[]> {
     const result: JobProps[] = [];
 
-    let offsetValue: number = 15;
+    let offsetValue: number = 0;
     const offsetJump: number = 15;
     const maxOffset: number = 2000;
 
-    while (offsetValue <= maxOffset) {
+    while (true) {
+      offsetValue += offsetJump;
       try {
         console.log(`Current Offset - ${offsetValue}`);
 
@@ -65,12 +66,13 @@ export default class CrawlerService {
         if (extractedData.length === 0) break;
 
         result.push(...extractedData);
-        offsetValue += offsetJump;
+        
+        if (offsetValue > maxOffset) break;
+        else offsetValue += offsetJump;
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
         console.error(`Error fetching data:`, error);
-        offsetValue += offsetJump;
         continue;
       }
     }
