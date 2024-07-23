@@ -1,10 +1,10 @@
 
-![Logo](https://socialify.git.ci/infsahitya/web-rake/image?description=1&descriptionEditable=One%20Scrape%20at%20a%20Time!&forks=1&issues=1&language=1&name=1&owner=1&pulls=1&stargazers=1&theme=Auto)
+![Logo](https://socialify.git.ci/infsahitya/web-scraper/image?description=1&descriptionEditable=One%20Scrape%20at%20a%20Time!&forks=1&issues=1&language=1&name=1&owner=1&pulls=1&stargazers=1&theme=Auto)
 
 
-# Web Rake
+# Web Scraper
 
-Web Rake is an innovative and powerful web scraping tool designed to extract and compile data from websites with unparalleled efficiency and precision. Utilizing cutting-edge technologies like NestJS and Cheerio.
+Web Scraper is an innovative and powerful web scraping tool designed to extract and compile data from websites with unparalleled efficiency and precision. Utilizing cutting-edge technologies like NestJS and Cheerio.
 
 It delves into the depths of web pages, seamlessly harvesting valuable information such as job descriptions, responsibilities, requirements, benefits, salaries, and tech stacks.
 
@@ -24,18 +24,18 @@ It delves into the depths of web pages, seamlessly harvesting valuable informati
 
 ## 📸 Screenshots
 
-![App Screenshot](https://raw.githubusercontent.com/infsahitya/web-rake/main/public/csv.png)
+![App Screenshot](https://raw.githubusercontent.com/infsahitya/web-scraper/main/public/csv.png)
 
-![App Screenshot](https://raw.githubusercontent.com/infsahitya/web-rake/main/public/json.png)
+![App Screenshot](https://raw.githubusercontent.com/infsahitya/web-scraper/main/public/json.png)
 
 ## ⚙️ Installation
 
-Install crowdfunding-dapp with npm
+Install web-scraper with git and npm
 
 ```bash
-  git clone https://github.com/infsahitya/web-rake.git
+  git clone https://github.com/infsahitya/web-scraper.git
   
-  cd ./web-rake
+  cd ./web-scraper
   
   npm install
 ```
