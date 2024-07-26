@@ -7,6 +7,37 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 @Injectable()
 export default class CrawlerService {
   private axiosInstance: AxiosInstance;
+  private readonly urlKeys: string[] = [
+    "remote-engineer-jobs",
+    "remote-exec-jobs",
+    "remote-senior-jobs",
+    "remote-dev-jobs",
+    "remote-finance-jobs",
+    "remote-javascript-jobs",
+    "remote-backend-jobs",
+    "remote-golang-jobs",
+    "remote-cloud-jobs",
+    "remote-medical-jobs",
+    "remote-full-stack-jobs",
+    "remote-front-end-jobs",
+    "remote-design-jobs",
+    "remote-react-jobs",
+    "remote-marketing-jobs",
+    "remote-mobile-jobs",
+    "remote-content-writing-jobs",
+    "remote-saas-jobs",
+    "remote-recruiter-jobs",
+    "remote-full-time-jobs",
+    "remote-api-jobs",
+    "remote-sales-jobs",
+    "remote-devops-jobs",
+    "remote-python-jobs",
+    "remote-node-jobs",
+    "remote-analyst-jobs",
+    "remote-architect-jobs",
+    "remote-wordpress-jobs",
+    "remote-laravel-jobs",
+  ];
 
   constructor() {
     this.axiosInstance = wrapper(
@@ -49,30 +80,33 @@ export default class CrawlerService {
 
     let offsetValue: number = 15;
     const offsetJump: number = 15;
-    const maxOffset: number = 2000;
+    const maxOffset: number = 1015;
 
-    while (offsetValue <= maxOffset) {
-      try {
-        console.log(`Current Offset - ${offsetValue}`);
+    for (const urlKey of this.urlKeys) {
+      while (offsetValue <= maxOffset) {
+        try {
+          console.log(`Current Offset [${urlKey}] - ${offsetValue}`);
 
-        const data = await this.fetchWithRedirects(
-          `https://remoteok.com/?&action=get_jobs&offset=${offsetValue}`,
-        );
+          const data = await this.fetchWithRedirects(
+            `https://remoteok.com/${urlKey}?&action=get_jobs&order_by=date&offset=${offsetValue}`,
+          );
 
-        const $ = cheerio.load(`<table>${data.trim()}</table>`);
+          const $ = cheerio.load(`<table>${data.trim()}</table>`);
 
-        const extractedData = await this.extractData($);
-        if (extractedData.length === 0) break;
+          const extractedData = await this.extractData($);
+          if (extractedData.length === 0) break;
 
-        result.push(...extractedData);
-        offsetValue += offsetJump;
+          result.push(...extractedData);
+          offsetValue += offsetJump;
 
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      } catch (error) {
-        console.error(`Error fetching data:`, error);
-        offsetValue += offsetJump;
-        continue;
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        } catch (error) {
+          console.error(`Error fetching data:`, error);
+          offsetValue += offsetJump;
+          continue;
+        }
       }
+      offsetValue = 15;
     }
 
     console.log(
