@@ -17,8 +17,11 @@ export default class CsvService {
   }
 
   convertToCsv(data: JobProps[]): [string, string] {
+    const uniqueData = [...new Map(data.map(job => [job.data_id, job])).values()];
+    uniqueData.sort((a, b) => new Date(b.datePosted).getTime() - new Date(a.datePosted).getTime())
+
     const json2csvParser = new Parser();
-    const csv = json2csvParser.parse(data);
+    const csv = json2csvParser.parse(uniqueData);
 
     const filePrefix = Date.now().toString();
     const folderPath = path.join(this.dirPath, filePrefix);
@@ -28,7 +31,7 @@ export default class CsvService {
     const csvFilePath = path.join(folderPath, `${filePrefix}_jobs.csv`);
     const jsonFilePath = path.join(folderPath, `${filePrefix}_jobs.json`);
 
-    fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2));
+    fs.writeFileSync(jsonFilePath, JSON.stringify(uniqueData, null, 2));
     fs.writeFileSync(csvFilePath, csv);
 
     return [jsonFilePath, csvFilePath];

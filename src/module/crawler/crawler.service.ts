@@ -15,13 +15,16 @@ export default class CrawlerService {
     "remote-finance-jobs",
     "remote-javascript-jobs",
     "remote-backend-jobs",
-    "remote-golang-jobs",
-    "remote-cloud-jobs",
-    "remote-medical-jobs",
-    "remote-full-stack-jobs",
     "remote-front-end-jobs",
-    "remote-design-jobs",
+    "remote-full-stack-jobs",
+    "remote-devops-jobs",
+    "remote-python-jobs",
+    "remote-architect-jobs",
+    "remote-cloud-jobs",
     "remote-react-jobs",
+    "remote-golang-jobs",
+    "remote-medical-jobs",
+    "remote-design-jobs",
     "remote-marketing-jobs",
     "remote-mobile-jobs",
     "remote-content-writing-jobs",
@@ -30,11 +33,8 @@ export default class CrawlerService {
     "remote-full-time-jobs",
     "remote-api-jobs",
     "remote-sales-jobs",
-    "remote-devops-jobs",
-    "remote-python-jobs",
     "remote-node-jobs",
     "remote-analyst-jobs",
-    "remote-architect-jobs",
     "remote-wordpress-jobs",
     "remote-laravel-jobs",
   ];
@@ -99,7 +99,7 @@ export default class CrawlerService {
           result.push(...extractedData);
           offsetValue += offsetJump;
 
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          // await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           console.error(`Error fetching data:`, error);
           offsetValue += offsetJump;
